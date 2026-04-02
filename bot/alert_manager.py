@@ -141,3 +141,58 @@ def list_alerts(symbol: Optional[str] = None) -> str:
         lines.append(f"• {name}: Alert when ₹{dir_str}{a['target_price']:.2f}")
 
     return "\n".join(lines)
+
+
+from v4.valuation_runner import run_v4_valuation
+
+def check_v4_smart_alerts(watchlist: list[str]) -> list[str]:
+    """
+    Check watchlist for V4 Buy/Sell zone triggers.
+    Runs every 15 minutes via scheduler.
+    """
+    triggered = []
+    
+    for symbol in watchlist:
+        try:
+            res = run_v4_valuation(symbol)
+            if not res.get("success"):
+                continue
+            
+            verdict = res["verdict"]
+            cmp = res["cmp"]
+            iv = res["intrinsic_value"]
+            mos = res["margin_of_safety"]
+            ey_verdict = res["yield_verdict"]
+            name = STOCK_NAMES.get(symbol, symbol)
+            
+            # 1. SMART BUY TRIGGER: UNDERVALUED + ATTRACTIVE
+            if verdict == "UNDERVALUED" and ey_verdict == "ATTRACTIVE":
+                # Only alert if it's deeply undervalued (MoS > 25%)
+                if mos >= 25.0:
+                    msg = (
+                        f"🚀 *V4 BUY ZONE TRIGGERED!*\n"
+                        f"💎 *{name}* ({symbol}) is deeply undervalued.\n"
+                        f"• Current Price: ₹{cmp:.2f}\n"
+                        f"• Intrinsic Value: ₹{iv:.2f}\n"
+                        f"• Margin of Safety: {mos:.1f}%\n"
+                        f"• Buffett Check: {ey_verdict} ✅\n"
+                        f"👉 *Action:* Strong entry opportunity."
+                    )
+                    triggered.append(msg)
+            
+            # 2. SMART EXIT TRIGGER: OVERVALUED
+            elif verdict == "OVERVALUED" and mos < -15.0:
+                msg = (
+                    f"⚠️ *V4 EXIT ALERT!*\n"
+                    f"🚩 *{name}* ({symbol}) is dangerously expensive.\n"
+                    f"• Current Price: ₹{cmp:.2f}\n"
+                    f"• Intrinsic Value: ₹{iv:.2f}\n"
+                    f"• Premium: {abs(mos):.1f}%\n"
+                    f"👉 *Action:* Consider booking profits or reducing exposure."
+                )
+                triggered.append(msg)
+                
+        except Exception as e:
+            logger.error(f"V4 alert check error for {symbol}: {e}")
+            
+    return triggered

@@ -350,74 +350,81 @@ def check_debt(ticker_info: dict, balance_sheet: pd.DataFrame, screener_data: Op
         return "UNAVAILABLE", "Debt check error"
 
 
-def check_valuation(ticker_info: dict, stock_symbol: str, screener_data: Optional[dict] = None) -> tuple[str, str]:
+from v4.valuation_runner import run_v4_valuation
+
+def check_valuation_v4(stock_symbol: str) -> tuple[str, str]:
     """
-    Check 10 — PE Ratio vs Industry Average PE.
-    Returns (signal, detail_message)
+    Check 10 — Strategy V4 Multi-Model Intrinsic Valuation.
     """
     try:
-        pe      = ticker_info.get("trailingPE")
-        fwd_pe  = ticker_info.get("forwardPE")
-        sector  = ticker_info.get("sector", "Unknown")
-        pb      = ticker_info.get("priceToBook")
-        ev_ebitda = ticker_info.get("enterpriseToEbitda")
-        ev_revenue = ticker_info.get("enterpriseToRevenue")
-        peer_benchmark = _peer_median_valuation(stock_symbol)
-        screener_pe = _screener_ratio(screener_data, "pe")
-        screener_pb = _screener_ratio(screener_data, "price_to_book")
-
-        if pe is None and fwd_pe is None and screener_pe <= 0:
-            return "UNAVAILABLE", "PE data unavailable"
-
-        # Prefer trailing PE, fallback to forward PE
-        if pe is not None:
-            pe_to_use = float(pe)
-            pe_label = "Trailing PE"
-        elif fwd_pe is not None:
-            pe_to_use = float(fwd_pe)
-            pe_label = "Forward PE"
-        else:
-            pe_to_use = float(screener_pe)
-            pe_label = "Screener PE"
-
-        if (pb is None or float(pb) <= 0) and screener_pb > 0:
-            pb = screener_pb
-
-        industry_pe = INDUSTRY_PE.get(sector, INDUSTRY_PE["Unknown"])
-        reference_pe = peer_benchmark.get("pe_median", industry_pe)
-        reference_label = "peer median PE" if "pe_median" in peer_benchmark else "industry PE"
-
-        if pe_to_use <= 0:
-            return "UNAVAILABLE", f"Negative PE — company may have a loss"
-
-        discount = ((reference_pe - pe_to_use) / reference_pe) * 100 if reference_pe else 0
-        pb_text = f", P/B {float(pb):.1f}" if pb is not None else ""
-        ev_ebitda_text = f", EV/EBITDA {float(ev_ebitda):.1f}" if ev_ebitda is not None else ""
-        ev_revenue_text = f", EV/Revenue {float(ev_revenue):.1f}" if ev_revenue is not None else ""
-        reference_text = f"{reference_label} {reference_pe:.1f}"
-
-        if pe_to_use < reference_pe * VALUATION_PE_DISCOUNT and (pb is None or float(pb) < VALUATION_PB_UNDERVALUED):
-            return "UNDERVALUED", (
-                f"{pe_label} {pe_to_use:.1f} vs {reference_text} — "
-                f"{discount:.0f}% discount{pb_text}{ev_ebitda_text} — undervalued opportunity!"
-            )
-        elif pe_to_use < reference_pe * VALUATION_PE_FAIR:
-            return "FAIRLY_VALUED", (
-                f"{pe_label} {pe_to_use:.1f} vs {reference_text}{pb_text}{ev_ebitda_text}{ev_revenue_text} — fair value"
-            )
-        elif pe_to_use < reference_pe * VALUATION_PE_CAUTION or (pb is not None and float(pb) < VALUATION_PB_CAUTION):
-            return "CAUTION", (
-                f"{pe_label} {pe_to_use:.1f} vs {reference_text}{pb_text}{ev_ebitda_text} — slight premium"
-            )
-        else:
-            return "EXPENSIVE", (
-                f"{pe_label} {pe_to_use:.1f} vs {reference_text}{pb_text}{ev_ebitda_text} — "
-                f"expensive, priced for perfection"
-            )
+        res = run_v4_valuation(stock_symbol)
+        if not res.get("success"):
+            return "UNAVAILABLE", res.get("reason", "Valuation failed")
+        
+        iv = res["intrinsic_value"]
+        cmp = res["cmp"]
+        mos = res["margin_of_safety"]
+        model = res["model_used"]
+        verdict = res["verdict"]
+        
+        detail = (
+            f"IV ({model}) ₹{iv:.2f} vs CMP ₹{cmp:.2f} | "
+            f"MoS: {mos:+.1f}% → {verdict}"
+        )
+        
+        # Map V4 verdict to signal
+        signal_map = {
+            "UNDERVALUED": "STRONG",
+            "FAIRLY_VALUED": "BULLISH",
+            "OVERVALUED": "CAUTION",
+            "UNAVAILABLE": "UNAVAILABLE"
+        }
+        return signal_map.get(verdict, "MODERATE"), detail
     except Exception as e:
-        logger.error(f"Valuation check error: {e}")
-        return "UNAVAILABLE", "Valuation check error"
+        logger.error(f"V4 valuation check error: {e}")
+        return "UNAVAILABLE", "V4 valuation check error"
 
+def check_peer_valuation_v4(stock_symbol: str) -> tuple[str, str]:
+    """
+    Check 11 — Peer Relative Valuation (V4 MoS comparison).
+    Compares the stock's Margin of Safety against the median MoS of its peers.
+    """
+    try:
+        from config import VALUATION_PEERS
+        peers = VALUATION_PEERS.get(stock_symbol, [])
+        if not peers:
+            return "INFO", "No peers defined for relative comparison"
+        
+        main_res = run_v4_valuation(stock_symbol)
+        if not main_res.get("success"):
+            return "UNAVAILABLE", "Main stock valuation failed"
+        
+        main_mos = main_res["margin_of_safety"]
+        peer_mos_list = []
+        
+        for p in peers:
+            p_res = run_v4_valuation(p)
+            if p_res.get("success"):
+                peer_mos_list.append(p_res["margin_of_safety"])
+        
+        if not peer_mos_list:
+            return "INFO", "Peer valuations unavailable for comparison"
+        
+        peer_median_mos = float(pd.Series(peer_mos_list).median())
+        diff = main_mos - peer_median_mos
+        
+        if diff > 15:
+            return "STRONG", f"Top in sector! MoS {main_mos:+.1f}% vs Peer Median {peer_median_mos:+.1f}% (Diff: {diff:+.1f}%)"
+        elif diff > 5:
+            return "BULLISH", f"Relatively cheap: MoS {main_mos:+.1f}% vs Peer Median {peer_median_mos:+.1f}% (Diff: {diff:+.1f}%)"
+        elif diff < -15:
+            return "WEAK", f"Sector laggard: MoS {main_mos:+.1f}% vs Peer Median {peer_median_mos:+.1f}% (Diff: {diff:+.1f}%)"
+        else:
+            return "MODERATE", f"Sector inline: MoS {main_mos:+.1f}% vs Peer Median {peer_median_mos:+.1f}% (Diff: {diff:+.1f}%)"
+            
+    except Exception as e:
+        logger.error(f"Peer V4 valuation check error: {e}")
+        return "UNAVAILABLE", "Peer V4 valuation check error"
 
 def run_all_fundamental_checks(
     stock_symbol: str,
@@ -426,7 +433,7 @@ def run_all_fundamental_checks(
     balance_sheet: pd.DataFrame,
 ) -> list[dict]:
     """
-    Run all 4 fundamental checks and return structured results list.
+    Run all fundamental checks and return structured results list.
     """
     screener_data = get_screener_snapshot(stock_symbol)
 
@@ -434,7 +441,8 @@ def run_all_fundamental_checks(
         (7,  "Earnings Growth",    check_earnings_growth(ticker_info, financials, screener_data)),
         (8,  "Profit Margin/ROE",  check_margins(ticker_info, financials, balance_sheet, screener_data)),
         (9,  "Debt Level",         check_debt(ticker_info, balance_sheet, screener_data)),
-        (10, "Valuation (PE)",     check_valuation(ticker_info, stock_symbol, screener_data)),
+        (10, "Intrinsic Valuation", check_valuation_v4(stock_symbol)),
+        (11, "Peer Valuation (V4)", check_peer_valuation_v4(stock_symbol)),
     ]
 
     return [

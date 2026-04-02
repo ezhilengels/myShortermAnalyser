@@ -9,6 +9,7 @@ Modes:
   python main.py --validate → Run watchlist validation and export JSON/CSV
   python main.py --benchmark → Run benchmark validation against stored expectations
   python main.py --stocktips [universe] → Run V3 stocktips pipeline and print top picks
+  python main.py --valuation [universe] → Run V4 Intrinsic Valuation scan and rank by MoS
 """
 
 import sys

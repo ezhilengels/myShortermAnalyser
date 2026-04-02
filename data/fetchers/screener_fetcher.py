@@ -117,14 +117,24 @@ def _series_metrics(values: list[float | None]) -> dict[str, float]:
 
 
 def _row_metrics(rows: dict[str, list[float | None]], labels: list[str]) -> dict[str, float]:
-    """Return series metrics for the first matching row label."""
+    """Return series metrics for the first matching row label (exact or fuzzy)."""
+    # 1. Try exact matches first
     for label in labels:
         if label in rows:
             return _series_metrics(rows.get(label, []))
+
+    # 2. Try case-insensitive fuzzy matches
+    for label in labels:
+        clean_target = label.lower().replace("+", "").strip()
+        for row_label in rows.keys():
+            clean_row = row_label.lower().replace("+", "").strip()
+            if clean_target in clean_row or clean_row in clean_target:
+                return _series_metrics(rows.get(row_label, []))
+
     return {"latest": 0.0, "prev": 0.0, "yoy": 0.0, "cagr": 0.0}
 
-
 def get_screener_snapshot(symbol: str) -> dict:
+
     code = resolve_screener_code(symbol)
     key = f"screener_snapshot_{code}"
     cached = cache_get(key)
@@ -141,17 +151,27 @@ def get_screener_snapshot(symbol: str) -> dict:
         profit_loss = _parse_table(_find_section(soup, "Profit & Loss")) if _find_section(soup, "Profit & Loss") else {"headers": [], "rows": {}}
         quarterly = _parse_table(_find_section(soup, "Quarterly Results")) if _find_section(soup, "Quarterly Results") else {"headers": [], "rows": {}}
         balance_sheet = _parse_table(_find_section(soup, "Balance Sheet")) if _find_section(soup, "Balance Sheet") else {"headers": [], "rows": {}}
+        cash_flow = _parse_table(_find_section(soup, "Cash Flows")) if _find_section(soup, "Cash Flows") else {"headers": [], "rows": {}}
         shareholding = _parse_table(_find_section(soup, "Shareholding Pattern")) if _find_section(soup, "Shareholding Pattern") else {"headers": [], "rows": {}}
 
         bs_rows = balance_sheet.get("rows", {})
-        equity_capital = bs_rows.get("Equity Capital", [])
-        reserves = bs_rows.get("Reserves", [])
-        borrowings = bs_rows.get("Borrowings +", [])
-        equity_values = [
-            (cap or 0.0) + (res or 0.0)
-            for cap, res in zip(equity_capital, reserves)
-            if cap is not None or res is not None
-        ]
+        pl_rows = profit_loss.get("rows", {})
+        cf_rows = cash_flow.get("rows", {})
+        
+        equity_capital = _row_metrics(bs_rows, ["Equity Capital"])
+        reserves = _row_metrics(bs_rows, ["Reserves"])
+        borrowings = _row_metrics(bs_rows, ["Borrowings +", "Borrowings"])
+        
+        # Helper to get first matching row values
+        def _get_row(rows_dict, candidates):
+            for c in candidates:
+                if c in rows_dict: return rows_dict[c]
+            return []
+
+        sales_row = _get_row(pl_rows, ["Sales +", "Revenue +"])
+        profit_row = _get_row(pl_rows, ["Net Profit +", "Net Profit"])
+        q_sales_row = _get_row(quarterly.get("rows", {}), ["Sales +", "Revenue +"])
+        q_profit_row = _get_row(quarterly.get("rows", {}), ["Net Profit +", "Net Profit"])
 
         current_price = ratios.get("current price", 0.0)
         book_value = ratios.get("book value", 0.0)
@@ -176,20 +196,38 @@ def get_screener_snapshot(symbol: str) -> dict:
                 "current_price": current_price,
                 "market_cap_cr": ratios.get("market cap", 0.0),
                 "dividend_yield": ratios.get("dividend yield", 0.0),
+                "face_value": ratios.get("face value", 0.0),
             },
             "growth": {
-                "annual_sales": _series_metrics(profit_loss.get("rows", {}).get("Sales +", [])),
-                "annual_profit": _series_metrics(profit_loss.get("rows", {}).get("Net Profit +", [])),
-                "quarterly_sales": _series_metrics(quarterly.get("rows", {}).get("Sales +", [])),
-                "quarterly_profit": _series_metrics(quarterly.get("rows", {}).get("Net Profit +", [])),
+                "annual_sales": _series_metrics(sales_row),
+                "annual_profit": _series_metrics(profit_row),
+                "quarterly_sales": _series_metrics(q_sales_row),
+                "quarterly_profit": _series_metrics(q_profit_row),
             },
             "margins": {
-                "annual_opm_latest": _series_metrics(profit_loss.get("rows", {}).get("OPM %", [])).get("latest", 0.0),
-                "quarterly_opm_latest": _series_metrics(quarterly.get("rows", {}).get("OPM %", [])).get("latest", 0.0),
+                "annual_opm_latest": _row_metrics(pl_rows, ["OPM %", "Operating Profit Margin"]).get("latest", 0.0),
+                "quarterly_opm_latest": _row_metrics(quarterly.get("rows", {}), ["OPM %"]).get("latest", 0.0),
+            },
+            "profit_loss": {
+                "pbt_latest": _row_metrics(pl_rows, ["Profit before tax", "PBT", "Financing Profit"]).get("latest", 0.0),
+                "tax_latest": _row_metrics(pl_rows, ["Tax %"]).get("latest", 0.0),
+                "interest_latest": _row_metrics(pl_rows, ["Interest", "Finance Costs"]).get("latest", 0.0),
+                "depreciation_latest": _row_metrics(pl_rows, ["Depreciation", "Depreciation & amortization"]).get("latest", 0.0),
             },
             "balance_sheet": {
-                "borrowings_latest": _series_metrics(borrowings).get("latest", 0.0),
-                "equity_latest": _series_metrics(equity_values).get("latest", 0.0),
+                "borrowings_latest": _row_metrics(bs_rows, ["Borrowings +", "Borrowings", "Total Debt"]).get("latest", 0.0),
+                "equity_latest": _series_metrics([
+                    (cap or 0.0) + (res or 0.0)
+                    for cap, res in zip(bs_rows.get("Equity Capital", []), bs_rows.get("Reserves", []))
+                    if cap is not None or res is not None
+                ]).get("latest", 0.0),
+                "investments_latest": _row_metrics(bs_rows, ["Investments"]).get("latest", 0.0),
+                "other_liabilities_latest": _row_metrics(bs_rows, ["Other Liabilities +", "Other Liabilities"]).get("latest", 0.0),
+            },
+            "cash_flow": {
+                "operating_latest": _row_metrics(cf_rows, ["Cash from Operating Activity +", "Cash from Operating Activity", "CFO"]).get("latest", 0.0),
+                "investing_latest": _row_metrics(cf_rows, ["Cash from Investing Activity +", "Cash from Investing Activity"]).get("latest", 0.0),
+                "capex_latest": abs(_row_metrics(cf_rows, ["Fixed assets purchased", "Capital Expenditure", "Asset purchase", "Investing Activities"]).get("latest", 0.0)),
             },
             "shareholding": {
                 "promoter_latest": promoter_metrics.get("latest", 0.0),

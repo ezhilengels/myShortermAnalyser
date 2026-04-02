@@ -84,6 +84,21 @@ def job_refresh_fii() -> None:
         logger.error(f"FII refresh failed: {e}")
 
 
+def job_v4_smart_alerts() -> None:
+    """Check watchlist for V4 Buy/Exit zones and send alerts."""
+    try:
+        from bot.alert_manager import check_v4_smart_alerts
+        from bot.telegram_bot import send_telegram_message
+        from config import WATCHLIST
+
+        triggered = check_v4_smart_alerts(WATCHLIST)
+        for msg in triggered:
+            asyncio.run(send_telegram_message(msg))
+            logger.info(f"💎 V4 Smart Alert sent: {msg[:80]}")
+    except Exception as e:
+        logger.error(f"V4 Smart alert check failed: {e}")
+
+
 # ─────────────────────────────────────────────
 # SCHEDULER FACTORY
 # ─────────────────────────────────────────────
@@ -123,6 +138,18 @@ def build_scheduler() -> BackgroundScheduler:
         day_of_week="mon-fri",
         id="price_alerts",
         name="Price Alert Checker",
+        replace_existing=True,
+    )
+
+    # V4 Smart Alert checker — every 15 min from 10:00–15:30 IST, weekdays
+    scheduler.add_job(
+        job_v4_smart_alerts,
+        trigger="cron",
+        hour="10-15",
+        minute="5,20,35,50",
+        day_of_week="mon-fri",
+        id="v4_smart_alerts",
+        name="V4 Smart Alert Checker",
         replace_existing=True,
     )
 

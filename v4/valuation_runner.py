@@ -14,9 +14,11 @@ sys.path.append(os.getcwd())
 from v4.valuation_engine import (
     calculate_graham_iv, calculate_dcf_iv, calculate_lynch_iv,
     calculate_buffett_iv, calculate_epv_iv, calculate_ddm_iv,
-    get_buffett_sanity_check, select_best_model
+    calculate_pb_roe_iv, get_buffett_sanity_check, 
+    calculate_weighted_iv, get_model_pair
 )
 from v4.valuation_data import gather_valuation_data
+from config import V4_WEIGHTED_VALUATION
 
 def run_v4_valuation(symbol: str) -> Dict[str, Any]:
     """
@@ -28,7 +30,7 @@ def run_v4_valuation(symbol: str) -> Dict[str, Any]:
         return {
             "symbol": symbol,
             "success": False,
-            "reason": f"Insufficient data for valuation: {', '.join(data.get('missing_fields', []))}",
+            "reason": f"UNAVAILABLE: Missing {', '.join(data.get('missing_fields', []))}",
             "errors": data.get("errors", [])
         }
 
@@ -36,34 +38,50 @@ def run_v4_valuation(symbol: str) -> Dict[str, Any]:
     graham_iv = calculate_graham_iv(data["eps_ttm"], data["growth_5y"])
     dcf_iv = calculate_dcf_iv(data["fcf"], data["growth_5y"])
     lynch_iv = calculate_lynch_iv(data["eps_ttm"], data["growth_5y"])
-    buffett_iv = calculate_buffett_iv(data["eps_ttm"], data["growth_5y"]) # Simplified for test
+    buffett_iv = calculate_buffett_iv(data["owner_earnings"], data["growth_5y"])
+    epv_iv = calculate_epv_iv(data["ebit"], data["tax_rate"])
     ddm_iv = calculate_ddm_iv(data["dividend_rate"], data["growth_5y"])
+    pb_roe_iv = calculate_pb_roe_iv(data["book_value"], data["roe"])
     
-    # Selection and verdict
-    best_model_name = select_best_model(data["sector"], data["industry"])
     iv_map = {
         "GRAHAM": graham_iv,
         "DCF": dcf_iv,
         "LYNCH": lynch_iv,
         "BUFFETT": buffett_iv,
-        "DDM": ddm_iv
+        "EPV": epv_iv,
+        "DDM": ddm_iv,
+        "PB_ROE": pb_roe_iv
     }
+
+    # Selection logic: Weighted vs Single
+    if V4_WEIGHTED_VALUATION:
+        final_iv, model_info = calculate_weighted_iv(iv_map, data["sector"], data["industry"])
+    else:
+        primary_name, _ = get_model_pair(data["sector"], data["industry"])
+        final_iv = iv_map.get(primary_name, 0.0)
+        model_info = primary_name
     
-    final_iv = iv_map.get(best_model_name, 0.0)
+    # Global Fallback if preferred choice failed but others exist
+    if final_iv <= 0:
+        for m_name in ["DCF", "GRAHAM", "LYNCH", "BUFFETT", "EPV"]:
+            if iv_map.get(m_name, 0.0) > 0:
+                final_iv = iv_map[m_name]
+                model_info = f"Fallback: {m_name}"
+                break
+
     cmp = data["price"]
+    ey_yield, ey_verdict = get_buffett_sanity_check(data["eps_ttm"], cmp)
     
     mos = ((final_iv - cmp) / final_iv * 100) if final_iv > 0 else 0.0
     
     if final_iv <= 0:
         verdict = "UNAVAILABLE"
-    elif mos >= 30:
-        verdict = "UNDERVALUED"
+    elif mos >= 20.0 and ey_verdict == "ATTRACTIVE":
+        verdict = "UNDERVALUED" # Double confirmed
     elif mos >= 0:
         verdict = "FAIRLY_VALUED"
     else:
         verdict = "OVERVALUED"
-        
-    ey_yield, ey_verdict = get_buffett_sanity_check(data["eps_ttm"], cmp)
     
     return {
         "symbol": symbol,
@@ -72,7 +90,7 @@ def run_v4_valuation(symbol: str) -> Dict[str, Any]:
         "intrinsic_value": final_iv,
         "verdict": verdict,
         "margin_of_safety": mos,
-        "model_used": best_model_name,
+        "model_used": model_info,
         "sector": data["sector"],
         "earnings_yield": ey_yield,
         "yield_verdict": ey_verdict,
@@ -81,7 +99,9 @@ def run_v4_valuation(symbol: str) -> Dict[str, Any]:
             "DCF": dcf_iv,
             "Lynch": lynch_iv,
             "Buffett": buffett_iv,
-            "DDM": ddm_iv
+            "EPV": epv_iv,
+            "DDM": ddm_iv,
+            "PB_ROE": pb_roe_iv
         }
     }
 

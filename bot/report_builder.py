@@ -125,9 +125,22 @@ def _build_stock_section(
     n_cnt = scoring["neutral_count"]
     r_cnt = scoring["bearish_count"]
 
+    # Valuation Check (Check 10)
+    valuation_detail = ""
+    for c in stock_result.get("all_checks", []):
+        if c["check_number"] == 10:
+            valuation_detail = c["detail"]
+            break
+    
     section = (
         f"{index}️⃣ *{name}* — ₹{current_price:.2f}\n"
         f"   Score: 🟢{b_cnt} 🟡{n_cnt} 🔴{r_cnt} | Grade: {_grade_emoji(grade)}{grade}\n"
+    )
+
+    if valuation_detail:
+        section += f"   💎 *Valuation:* {valuation_detail}\n"
+
+    section += (
         f"   Core/Context: {scoring.get('core_score', 0)}/{scoring.get('context_score', 0)}"
         f" | Avg conf: {scoring.get('average_confidence', 0):.2f}\n"
         f"   {_verdict_emoji(verdict)} Verdict: *{verdict}* | Confidence: {conf}/10\n"

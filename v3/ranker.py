@@ -33,7 +33,7 @@ from analysis.fundamental import (
     check_debt,
     check_earnings_growth,
     check_margins,
-    check_valuation,
+    check_valuation_v4,
 )
 from analysis.macro import (
     check_china_pmi_signal,

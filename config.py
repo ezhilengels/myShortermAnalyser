@@ -29,6 +29,12 @@ WATCHLIST = [
     "PRECWIRE.NS",     # Precision Wires India
 ]
 
+# ─────────────────────────────────────────────
+# MY PORTFOLIO — Symbols you currently hold
+# ─────────────────────────────────────────────
+MY_PORTFOLIO = os.getenv("MY_PORTFOLIO", "NATIONALUM.NS").split(",")
+MY_PORTFOLIO = [s.strip() for s in MY_PORTFOLIO if s.strip()]
+
 # Human-readable names for Telegram display
 STOCK_NAMES = {
     "NATIONALUM.NS": "NALCO",
@@ -371,6 +377,19 @@ VALUATION_PB_UNDERVALUED = float(os.getenv("VALUATION_PB_UNDERVALUED", "4.5"))
 VALUATION_PE_FAIR        = float(os.getenv("VALUATION_PE_FAIR", "1.10"))
 VALUATION_PE_CAUTION     = float(os.getenv("VALUATION_PE_CAUTION", "1.35"))
 VALUATION_PB_CAUTION     = float(os.getenv("VALUATION_PB_CAUTION", "6.0"))
+
+# ─────────────────────────────────────────────
+# STRATEGY V4 VALUATION CONSTANTS
+# ─────────────────────────────────────────────
+G_SEC_YIELD          = float(os.getenv("G_SEC_YIELD", "7.05"))
+DISCOUNT_RATE_INDIA  = float(os.getenv("DISCOUNT_RATE_INDIA", "13.0"))
+WACC_DEFAULT         = float(os.getenv("WACC_DEFAULT", "12.0"))
+TERMINAL_GROWTH      = float(os.getenv("TERMINAL_GROWTH", "5.0"))
+MARGIN_OF_SAFETY     = float(os.getenv("MARGIN_OF_SAFETY", "30.0"))
+
+# V4 Strategy Toggles
+V4_STRICT_MODE       = os.getenv("V4_STRICT_MODE", "True").lower() == "true"
+V4_WEIGHTED_VALUATION = os.getenv("V4_WEIGHTED_VALUATION", "True").lower() == "true"
 
 # ─────────────────────────────────────────────
 # DISCLAIMER
