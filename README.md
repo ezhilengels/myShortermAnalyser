@@ -37,3 +37,13 @@ To run the Nifty 50 analysis, use this command in your terminal:
    1     cd "/Users/nathiya/Documents/my app/newstockbot"
    3. Run the command:
        python3 main.py --stocktips nifty50
+
+
+for valution 
+
+You can run it like this:
+   1 python3 valuation_only.py NALCO
+
+  Or for multiple stocks:
+   1 python3 valuation_only.py RELIANCE.NS TCS.NS
+

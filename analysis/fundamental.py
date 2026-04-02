@@ -10,7 +10,15 @@ Check 10: Valuation (Trailing PE vs Industry PE)
 import logging
 from typing import Optional
 import pandas as pd
-from config import INDUSTRY_PE, VALUATION_PEERS
+from config import (
+    INDUSTRY_PE,
+    VALUATION_PEERS,
+    VALUATION_PE_DISCOUNT,
+    VALUATION_PB_UNDERVALUED,
+    VALUATION_PE_FAIR,
+    VALUATION_PE_CAUTION,
+    VALUATION_PB_CAUTION,
+)
 from data.fetchers.screener_fetcher import get_screener_snapshot
 
 logger = logging.getLogger(__name__)
@@ -388,16 +396,16 @@ def check_valuation(ticker_info: dict, stock_symbol: str, screener_data: Optiona
         ev_revenue_text = f", EV/Revenue {float(ev_revenue):.1f}" if ev_revenue is not None else ""
         reference_text = f"{reference_label} {reference_pe:.1f}"
 
-        if pe_to_use < reference_pe * 0.75 and (pb is None or float(pb) < 4.5):
+        if pe_to_use < reference_pe * VALUATION_PE_DISCOUNT and (pb is None or float(pb) < VALUATION_PB_UNDERVALUED):
             return "UNDERVALUED", (
                 f"{pe_label} {pe_to_use:.1f} vs {reference_text} — "
                 f"{discount:.0f}% discount{pb_text}{ev_ebitda_text} — undervalued opportunity!"
             )
-        elif pe_to_use < reference_pe * 1.10:
+        elif pe_to_use < reference_pe * VALUATION_PE_FAIR:
             return "FAIRLY_VALUED", (
                 f"{pe_label} {pe_to_use:.1f} vs {reference_text}{pb_text}{ev_ebitda_text}{ev_revenue_text} — fair value"
             )
-        elif pe_to_use < reference_pe * 1.35 or (pb is not None and float(pb) < 6):
+        elif pe_to_use < reference_pe * VALUATION_PE_CAUTION or (pb is not None and float(pb) < VALUATION_PB_CAUTION):
             return "CAUTION", (
                 f"{pe_label} {pe_to_use:.1f} vs {reference_text}{pb_text}{ev_ebitda_text} — slight premium"
             )

@@ -155,18 +155,18 @@ SCREENER_COMPANY_CODES = {
 # INDUSTRY PE BENCHMARKS
 # ─────────────────────────────────────────────
 INDUSTRY_PE = {
-    "Basic Materials":      12,
-    "Industrials":          28,
-    "Financial Services":   18,
-    "Utilities":            20,
+    "Basic Materials":      25,  # Raised from 12 (Specialty chemicals/Metals in India)
+    "Industrials":          35,  # Raised from 28 (Defence/CapGoods are 40-60+)
+    "Financial Services":   22,  # Raised from 18
+    "Utilities":            25,  # Raised from 20
     "Technology":           35,
-    "Consumer Cyclical":    25,
-    "Consumer Defensive":   30,
-    "Healthcare":           30,
-    "Energy":               14,
-    "Real Estate":          22,
-    "Communication Services": 25,
-    "Unknown":              20,
+    "Consumer Cyclical":    40,  # Raised from 25 (Auto/Retail)
+    "Consumer Defensive":   45,  # Raised from 30 (FMCG commands high PE in India)
+    "Healthcare":           35,  # Raised from 30
+    "Energy":               18,  # Raised from 14
+    "Real Estate":          35,  # Raised from 22
+    "Communication Services": 30, # Raised from 25
+    "Unknown":              25,
 }
 
 # ─────────────────────────────────────────────
@@ -362,6 +362,15 @@ V3_MIN_TRADED_VALUE = float(os.getenv("V3_MIN_AVG_TRADED_VALUE_CR", "25.0"))
 V3_MIN_REL_VOLUME   = float(os.getenv("V3_MIN_RELATIVE_VOLUME", "1.1"))
 V3_REQUIRE_SMA200   = os.getenv("V3_REQUIRE_ABOVE_200DMA", "True").lower() == "true"
 V3_REQUIRE_SMA50    = os.getenv("V3_REQUIRE_ABOVE_50DMA", "True").lower() == "true"
+
+# ─────────────────────────────────────────────
+# VALUATION THRESHOLDS
+# ─────────────────────────────────────────────
+VALUATION_PE_DISCOUNT    = float(os.getenv("VALUATION_PE_DISCOUNT", "0.75"))
+VALUATION_PB_UNDERVALUED = float(os.getenv("VALUATION_PB_UNDERVALUED", "4.5"))
+VALUATION_PE_FAIR        = float(os.getenv("VALUATION_PE_FAIR", "1.10"))
+VALUATION_PE_CAUTION     = float(os.getenv("VALUATION_PE_CAUTION", "1.35"))
+VALUATION_PB_CAUTION     = float(os.getenv("VALUATION_PB_CAUTION", "6.0"))
 
 # ─────────────────────────────────────────────
 # DISCLAIMER
