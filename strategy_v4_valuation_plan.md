@@ -1,4 +1,4 @@
-# Strategy V4: Multi-Model Intrinsic Valuation Plan
+ # Strategy V4: Multi-Model Intrinsic Valuation Plan
 
 ## 1. Objective
 Implement a sophisticated valuation engine that goes beyond simple PE ratios by calculating "Intrinsic Value" (IV) using six distinct financial models. The engine will automatically select the most appropriate model based on the stock's sector and characteristics.
