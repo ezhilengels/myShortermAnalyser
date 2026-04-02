@@ -36,4 +36,4 @@ To run the Nifty 50 analysis, use this command in your terminal:
    2. Navigate to your project folder:
    1     cd "/Users/nathiya/Documents/my app/newstockbot"
    3. Run the command:
-   1     python3 main.py --stocktips nifty50
+       python3 main.py --stocktips nifty50
