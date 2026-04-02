@@ -1,0 +1,55 @@
+{
+  "as_of": "2026-03-31",
+  "description": "Human baseline expectations for core validation. Update these after real review sessions.",
+  "cases": [
+    {
+      "symbol": "NATIONALUM.NS",
+      "name": "NALCO",
+      "expected_rule_verdict": "HOLD",
+      "expected_ai_verdict": "HOLD",
+      "min_core_score": 6,
+      "max_critical_unavailable": 0,
+      "notes": "Strong business quality, but current confidence guardrails should keep this conservative."
+    },
+    {
+      "symbol": "HINDZINC.NS",
+      "name": "HINDZINC",
+      "expected_rule_verdict": "SELL",
+      "expected_ai_verdict": "SELL",
+      "max_core_score": 2,
+      "notes": "Current framework should stay cautious to bearish."
+    },
+    {
+      "symbol": "BEL.NS",
+      "name": "BEL",
+      "expected_rule_verdict": "SELL",
+      "expected_ai_verdict": "SELL",
+      "max_core_score": 1,
+      "notes": "Framework currently rates this weak on core setup."
+    },
+    {
+      "symbol": "NTPC.NS",
+      "name": "NTPC",
+      "expected_rule_verdict": "SELL",
+      "expected_ai_verdict": "SELL",
+      "max_core_score": 1,
+      "notes": "Framework currently rates this weak on core setup."
+    },
+    {
+      "symbol": "ICICIBANK.NS",
+      "name": "ICICIBANK",
+      "expected_rule_verdict": "SELL",
+      "expected_ai_verdict": "SELL",
+      "max_core_score": 2,
+      "notes": "Framework should remain cautious until stronger core evidence appears."
+    },
+    {
+      "symbol": "PRECWIRE.NS",
+      "name": "PRECWIRE",
+      "expected_rule_verdict": "HOLD",
+      "expected_ai_verdict": "HOLD",
+      "max_core_score": 4,
+      "notes": "Mixed setup; should not become an aggressive bullish call."
+    }
+  ]
+}

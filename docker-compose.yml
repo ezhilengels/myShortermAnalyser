@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  stock_bot:
+    build: .
+    container_name: stock_analysis_bot
+    env_file: .env
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Kolkata
+    networks:
+      - bot_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: stock_bot_redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - bot_network
+
+volumes:
+  redis_data:
+
+networks:
+  bot_network:
+    driver: bridge

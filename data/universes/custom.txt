@@ -1,0 +1,8 @@
+# Example custom V3 universe
+# One symbol per line. Plain NSE symbols are normalized to .NS automatically.
+
+RELIANCE
+TCS
+HDFCBANK
+INFY
+ICICIBANK

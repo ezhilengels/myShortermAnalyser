@@ -1,0 +1,7 @@
+symbol,name,price,grade,score,core_score,context_score,average_confidence,available_checks,unavailable_checks,critical_unavailable,bullish_count,bearish_count,neutral_count,rule_verdict,ai_verdict,ai_confidence,top_positive_checks,top_negative_checks
+NATIONALUM.NS,NALCO,386.1,A,8.0,9.0,-1.0,0.54,16,5,0,10,3,8,BUY,BUY,7,DMA Position | RSI | Moving Avg Alignment,MACD | Intraday Trend | Global Sentiment
+HINDZINC.NS,HINDZINC,502.15,D,-3.0,1.0,-4.0,0.54,16,5,0,5,6,10,AVOID,HOLD,6,52-Week Range | Earnings Growth | Profit Margin/ROE,DMA Position | MACD | Moving Avg Alignment
+BEL.NS,BEL,400.65,D,-7.0,-3.0,-4.0,0.54,16,5,0,3,7,11,AVOID,SELL,6,Earnings Growth | Profit Margin/ROE | Debt Level,DMA Position | MACD | Moving Avg Alignment
+NTPC.NS,NTPC,370.65,D,-7.0,-3.0,-4.0,0.54,16,5,0,3,6,12,AVOID,HOLD,6,DMA Position | RSI | Valuation (PE),MACD | Intraday Trend | Debt Level
+ICICIBANK.NS,ICICIBANK,1205.9,D,-6.0,-2.0,-4.0,0.54,16,5,0,3,6,12,AVOID,HOLD,6,52-Week Range | Earnings Growth | Profit Margin/ROE,DMA Position | MACD | Moving Avg Alignment
+PRECWIRE.NS,PRECWIRE,292.1,C,-1.0,3.0,-4.0,0.54,16,5,0,5,5,11,NEUTRAL,HOLD,6,DMA Position | RSI | Earnings Growth,MACD | Intraday Trend | Profit Margin/ROE

@@ -1,0 +1,7 @@
+symbol,name,price,grade,score,core_score,context_score,average_confidence,available_checks,unavailable_checks,critical_unavailable,bullish_count,bearish_count,neutral_count,rule_verdict,ai_verdict,ai_confidence,top_positive_checks,top_negative_checks
+NATIONALUM.NS,NALCO,0.0,C,0.0,0.0,0.0,0.5,14,7,0,0,0,21,NEUTRAL,NEUTRAL,5,,
+HINDZINC.NS,HINDZINC,0.0,C,0.0,0.0,0.0,0.5,14,7,0,0,0,21,NEUTRAL,NEUTRAL,5,,
+BEL.NS,BEL,0.0,C,0.0,0.0,0.0,0.5,14,7,0,0,0,21,NEUTRAL,NEUTRAL,5,,
+NTPC.NS,NTPC,0.0,C,0.0,0.0,0.0,0.5,14,7,0,0,0,21,NEUTRAL,NEUTRAL,5,,
+ICICIBANK.NS,ICICIBANK,0.0,C,0.0,0.0,0.0,0.5,14,7,0,0,0,21,NEUTRAL,NEUTRAL,5,,
+PRECWIRE.NS,PRECWIRE,0.0,C,0.0,0.0,0.0,0.5,14,7,0,0,0,21,NEUTRAL,NEUTRAL,5,,
