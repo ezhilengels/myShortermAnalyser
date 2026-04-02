@@ -354,6 +354,16 @@ GROQ_MAX_TOKENS = 800
 GROQ_TEMPERATURE = 0.3
 
 # ─────────────────────────────────────────────
+# V3 PRE-FILTER CONFIGURATION
+# ─────────────────────────────────────────────
+V3_MIN_PRICE        = float(os.getenv("V3_MIN_PRICE", "50.0"))
+V3_MIN_MARKET_CAP   = float(os.getenv("V3_MIN_MARKET_CAP_CR", "10000.0"))
+V3_MIN_TRADED_VALUE = float(os.getenv("V3_MIN_AVG_TRADED_VALUE_CR", "25.0"))
+V3_MIN_REL_VOLUME   = float(os.getenv("V3_MIN_RELATIVE_VOLUME", "1.1"))
+V3_REQUIRE_SMA200   = os.getenv("V3_REQUIRE_ABOVE_200DMA", "True").lower() == "true"
+V3_REQUIRE_SMA50    = os.getenv("V3_REQUIRE_ABOVE_50DMA", "True").lower() == "true"
+
+# ─────────────────────────────────────────────
 # DISCLAIMER
 # ─────────────────────────────────────────────
 DISCLAIMER = (

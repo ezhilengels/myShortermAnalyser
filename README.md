@@ -24,3 +24,16 @@ An automated Python-based Telegram bot designed for **Short-Term (Swing) and Int
 ## 📜 Disclaimer
 This tool is for educational purposes only. Trading stocks involves risk.
 EOF
+
+
+
+To run the Nifty 50 analysis, use this command in your terminal:
+
+   python3 main.py --stocktips nifty50
+
+  How to run it:
+   1. Open your terminal.
+   2. Navigate to your project folder:
+   1     cd "/Users/nathiya/Documents/my app/newstockbot"
+   3. Run the command:
+   1     python3 main.py --stocktips nifty50

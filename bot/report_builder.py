@@ -344,7 +344,7 @@ def build_single_stock_report(
 
 
 def build_stocktips_report(result: dict) -> str:
-    """Build a compact plain-text Telegram report for the separate V3 /stocktips flow."""
+    """Build a detailed plain-text Telegram report for the separate V3 /stocktips flow."""
     universe = result.get("universe", {})
     prefilter = result.get("prefilter", {})
     ranking = result.get("ranking", {})
@@ -352,54 +352,65 @@ def build_stocktips_report(result: dict) -> str:
     now = datetime.now(IST).strftime("%d-%b-%Y %I:%M %p IST")
 
     header = (
-        "STOCKTIPS V3\n"
+        "📊 *STOCKTIPS V3 REPORT*\n"
         f"🕐 {now}\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n\n"
     )
 
     overview = (
-        f"Universe: {universe.get('name', 'unknown')} ({universe.get('count', 0)} stocks)\n"
-        f"Pre-filter passed: {len(prefilter.get('passed', []))}/{prefilter.get('total', 0)} "
+        f"🌐 *Universe:* {universe.get('name', 'unknown')} ({universe.get('count', 0)} stocks)\n"
+        f"🔍 *Pre-filter:* {len(prefilter.get('passed', []))}/{prefilter.get('total', 0)} passed "
         f"({prefilter.get('pass_rate', 0)}%)\n"
-        f"Shortlist ranked: {len(ranking.get('ranked', []))}\n"
+        f"🏆 *Shortlist ranked:* {len(ranking.get('ranked', []))}\n"
     )
 
     picks = selection.get("top_3", [])
-    picks_section = "\nTop Picks\n"
+    picks_section = "\n🚀 *TOP PICKS*\n"
     if not picks:
-        picks_section += "No picks available today.\n"
+        picks_section += "No high-conviction picks today.\n"
     else:
         for pick in picks:
             picks_section += (
-                f"\n{pick['rank']}. {pick['name']} ({pick['symbol']})\n"
-                f"Why: {pick['why']}\n"
-                f"Risk: {pick['risk']}\n"
+                f"\n*{pick['rank']}. {pick['name']}* ({pick['symbol']})\n"
+                f"✨ Why: {pick['why']}\n"
+                f"⚠️ Risk: {pick['risk']}\n"
             )
 
     shortlist = ranking.get("ranked", [])[:10]
-    shortlist_section = "\nShortlist Snapshot\n"
+    shortlist_section = "\n📋 *SHORTLIST SNAPSHOT*\n"
     if not shortlist:
         shortlist_section += "No ranked shortlist available.\n"
     else:
         for row in shortlist:
             name = STOCK_NAMES.get(row["symbol"], row["symbol"].replace(".NS", ""))
             score_text = f"{row['score']:+.2f}"
+            adj_score = f"{row.get('adjusted_score', 0):+.2f}"
             conf_text = f"{row['confidence']:.2f}"
+            
+            # Extract passed/failed checks
+            checks = row.get("checks", [])
+            passed = [c["name"] for c in checks if c["score"] > 0]
+            failed = [c["name"] for c in checks if c["score"] < 0]
+            
             shortlist_section += (
-                f"• {name}: score {score_text}, conf {conf_text}\n"
+                f"\n🔹 *{name}* ({row['symbol']})\n"
+                f"   Score: {score_text} (Adj: {adj_score}) | Conf: {conf_text}\n"
             )
+            if passed:
+                shortlist_section += f"   ✅ Passed: {', '.join(passed[:5])}\n"
+            if failed:
+                shortlist_section += f"   ❌ Failed: {', '.join(failed[:5])}\n"
 
     watchouts = selection.get("watchouts", [])
     watchout_section = ""
     if watchouts:
-        watchout_section = "\nWatchouts\n"
+        watchout_section = "\n⚠️ *WATCHOUTS*\n"
         for note in watchouts[:3]:
             watchout_section += f"• {note}\n"
 
     market_note = selection.get("market_note", "")
     note_section = ""
     if market_note:
-        note_section = f"\nMarket Note\n{market_note}\n"
+        note_section = f"\n📝 *MARKET NOTE*\n{market_note}\n"
 
-    disclaimer_section = "\n" + DISCLAIMER.replace("*", "")
-    return header + overview + picks_section + shortlist_section + watchout_section + note_section + disclaimer_section
+    return header + overview + picks_section + shortlist_section + watchout_section + note_section + "\n" + DISCLAIMER

@@ -15,21 +15,26 @@ import pandas as pd
 
 from data.fetchers.yfinance_fetcher import get_historical_data, get_ticker_info
 
+from config import (
+    V3_MIN_PRICE, V3_MIN_MARKET_CAP, V3_MIN_TRADED_VALUE, 
+    V3_MIN_REL_VOLUME, V3_REQUIRE_SMA200, V3_REQUIRE_SMA50
+)
+
 logger = logging.getLogger(__name__)
 
 
 DEFAULT_PREFILTER_RULES = {
     "min_history_days": 220,
-    "min_price": 50.0,
-    "min_market_cap_cr": 10000.0,
-    "min_avg_traded_value_cr": 25.0,
+    "min_price": V3_MIN_PRICE,
+    "min_market_cap_cr": V3_MIN_MARKET_CAP,
+    "min_avg_traded_value_cr": V3_MIN_TRADED_VALUE,
     "min_avg_volume": 100000.0,
     "min_20d_return_pct": 2.0,
     "min_distance_above_200dma_pct": 2.0,
-    "require_above_200dma": True,
-    "require_above_50dma": True,
+    "require_above_200dma": V3_REQUIRE_SMA200,
+    "require_above_50dma": V3_REQUIRE_SMA50,
     "require_relative_volume": True,
-    "min_relative_volume": 1.1,
+    "min_relative_volume": V3_MIN_REL_VOLUME,
 }
 
 

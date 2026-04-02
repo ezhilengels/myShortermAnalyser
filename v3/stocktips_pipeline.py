@@ -137,6 +137,18 @@ def format_stocktips_console(result: dict[str, Any]) -> str:
         + (", ".join(item["symbol"] for item in ranking.get("passed", [])[:10]) or "None")
     )
     lines.append("-" * 60)
+    lines.append("Shortlist Details")
+    for row in ranking.get("ranked", [])[:5]:
+        checks = row.get("checks", [])
+        passed = [c["name"] for c in checks if c["score"] > 0]
+        failed = [c["name"] for c in checks if c["score"] < 0]
+        lines.append(f"• {row['symbol']} | Score: {row['score']:+.2f} | Conf: {row['confidence']:.2f}")
+        if passed:
+            lines.append(f"  ✅ Passed: {', '.join(passed[:4])}")
+        if failed:
+            lines.append(f"  ❌ Failed: {', '.join(failed[:4])}")
+
+    lines.append("-" * 60)
     lines.append("Top Picks")
 
     picks = selection.get("top_3", [])

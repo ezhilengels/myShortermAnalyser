@@ -28,6 +28,8 @@ BUILTIN_UNIVERSES = {
     "watchlist": list(WATCHLIST),
     "custom": UNIVERSE_DIR / "custom.txt",
     "custom1": UNIVERSE_DIR / "custom1.txt",
+    "nifty50": UNIVERSE_DIR / "nifty50.txt",
+    "nifty100": UNIVERSE_DIR / "nifty100.txt",
     "nifty200": UNIVERSE_DIR / "nifty200.txt",
     "nifty500": UNIVERSE_DIR / "nifty500.txt",
     "metals": UNIVERSE_DIR / "metals.txt",
