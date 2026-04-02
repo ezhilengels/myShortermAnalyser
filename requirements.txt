@@ -9,6 +9,7 @@ groq>=0.4.2
 apscheduler>=3.10.0
 pytz>=2023.3
 redis>=4.6.0
+pandas-ta>=0.3.14b
 python-dotenv>=1.0.0
 fake-useragent>=1.4.0
 httpx>=0.24.0

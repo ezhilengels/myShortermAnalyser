@@ -25,7 +25,7 @@ def run_portfolio_audit():
             continue
             
         cmp = res["cmp"]
-        iv = res["intrinsic_value"]
+        iv = res["iv"]
         mos = res["margin_of_safety"]
         verdict = res["verdict"]
         ey_verdict = res["yield_verdict"]

@@ -87,14 +87,14 @@ def run_v4_valuation(symbol: str) -> Dict[str, Any]:
         "symbol": symbol,
         "success": True,
         "cmp": cmp,
-        "intrinsic_value": final_iv,
+        "iv": final_iv,
         "verdict": verdict,
         "margin_of_safety": mos,
         "model_used": model_info,
         "sector": data["sector"],
         "earnings_yield": ey_yield,
         "yield_verdict": ey_verdict,
-        "models": {
+        "valuation_results": {
             "Graham": graham_iv,
             "DCF": dcf_iv,
             "Lynch": lynch_iv,
@@ -113,7 +113,7 @@ def print_v4_report(result: Dict[str, Any]):
     print(f"\n--- Strategy V4 Intrinsic Valuation: {result['symbol']} ---")
     print(f"Sector: {result['sector']}")
     print(f"Current Market Price: ₹{result['cmp']:.2f}")
-    print(f"Estimated Intrinsic Value: ₹{result['intrinsic_value']:.2f} ({result['model_used']} model)")
+    print(f"Estimated Intrinsic Value: ₹{result['iv']:.2f} ({result['model_used']} model)")
     
     mos = result['margin_of_safety']
     print(f"Verdict: {result['verdict']} | Margin of Safety: {mos:+.1f}%")
@@ -121,7 +121,7 @@ def print_v4_report(result: Dict[str, Any]):
     print(f"Buffett Check: Earnings Yield {result['earnings_yield']:.2f}% | Bond Yield (7.05%) → {result['yield_verdict']}")
     
     print("\nModel Comparisons:")
-    for m, val in result['models'].items():
+    for m, val in result['valuation_results'].items():
         if val > 0:
             status = "✅" if val > result['cmp'] else "⚠️"
             print(f"  {status} {m:<10}: ₹{val:.2f}")

@@ -236,6 +236,14 @@ def mode_stocktips(universe: str = "watchlist") -> None:
     print("\n" + format_stocktips_console(result))
 
 
+def mode_valuation(universe: str = "watchlist") -> None:
+    """Run the Strategy V4 Intrinsic Valuation scanner and print results."""
+    from v4.valuation_scanner import run_valuation_scan
+
+    logger.info(f"💎 Running Strategy V4 Valuation Scanner for universe: {universe}")
+    run_valuation_scan(universe)
+
+
 # ─────────────────────────────────────────────
 # ENTRYPOINT
 # ─────────────────────────────────────────────
@@ -262,5 +270,9 @@ if __name__ == "__main__":
         idx = args.index("--stocktips")
         universe = args[idx + 1] if idx + 1 < len(args) and not args[idx + 1].startswith("--") else "watchlist"
         mode_stocktips(universe)
+    elif "--valuation" in args:
+        idx = args.index("--valuation")
+        universe = args[idx + 1] if idx + 1 < len(args) and not args[idx + 1].startswith("--") else "watchlist"
+        mode_valuation(universe)
     else:
         mode_bot()

@@ -361,15 +361,19 @@ def check_valuation_v4(stock_symbol: str) -> tuple[str, str]:
         if not res.get("success"):
             return "UNAVAILABLE", res.get("reason", "Valuation failed")
         
-        iv = res["intrinsic_value"]
+        iv = res["iv"]
         cmp = res["cmp"]
         mos = res["margin_of_safety"]
         model = res["model_used"]
         verdict = res["verdict"]
         
+        ey_yield = res.get("earnings_yield", 0.0)
+        ey_verdict = res.get("yield_verdict", "N/A")
+        
         detail = (
             f"IV ({model}) ₹{iv:.2f} vs CMP ₹{cmp:.2f} | "
-            f"MoS: {mos:+.1f}% → {verdict}"
+            f"MoS: {mos:+.1f}% → {verdict} | "
+            f"EY: {ey_yield:.1f}% ({ey_verdict})"
         )
         
         # Map V4 verdict to signal
@@ -442,7 +446,6 @@ def run_all_fundamental_checks(
         (8,  "Profit Margin/ROE",  check_margins(ticker_info, financials, balance_sheet, screener_data)),
         (9,  "Debt Level",         check_debt(ticker_info, balance_sheet, screener_data)),
         (10, "Intrinsic Valuation", check_valuation_v4(stock_symbol)),
-        (11, "Peer Valuation (V4)", check_peer_valuation_v4(stock_symbol)),
     ]
 
     return [
@@ -454,4 +457,22 @@ def run_all_fundamental_checks(
             "detail":       result[1],
         }
         for num, name, result in checks
+    ]
+
+def run_additional_fundamental_signals(stock_symbol: str) -> list[dict]:
+    """
+    Run non-scoring fundamental signals.
+    """
+    signals = [
+        ("Peer Valuation (V4)", check_peer_valuation_v4(stock_symbol)),
+    ]
+
+    return [
+        {
+            "category": "Additional Signals",
+            "name": name,
+            "signal": result[0],
+            "detail": result[1],
+        }
+        for name, result in signals
     ]

@@ -39,8 +39,10 @@ from data.fetchers.commodity_fetcher import get_all_commodities, get_india_vix, 
 from analysis.scorer                 import run_full_analysis
 from ai.groq_engine                  import get_groq_decision
 from bot.report_builder              import (
-    build_morning_report, build_evening_report, build_single_stock_report, build_stocktips_report
+    build_morning_report, build_evening_report, build_single_stock_report, 
+    build_stocktips_report, build_valuation_report, build_v4_friendly_report
 )
+from v4.valuation_scanner            import run_valuation_scan
 from bot.alert_manager               import add_alert, remove_alert, check_price_alerts, list_alerts
 
 logger = logging.getLogger(__name__)
@@ -114,6 +116,7 @@ def analyse_single_stock(symbol: str) -> tuple[dict, dict, float]:
         stock_result["scoring"],
         price,
         market_context,
+        additional_signals=stock_result.get("additional_signals"),
     )
 
     return stock_result, ai_decision, price
@@ -159,6 +162,7 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         "📖 *Available Commands*\n\n"
         "/analyze NALCO — Full 21-condition analysis\n"
         "/stocktips [universe] — V3 top stock ideas\n"
+        "/valuation [universe] — V4 Intrinsic Valuation scan\n"
         "/report — Get today's full report now\n"
         "/watchlist — Show all tracked stocks\n"
         "/add SYMBOL — Add stock to watchlist\n"
@@ -171,6 +175,73 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         "/removealert NALCO — Remove NALCO alerts\n"
     )
     await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
+
+
+async def cmd_value(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    args = ctx.args
+    if not args:
+        await update.message.reply_text("⚠️ Usage: /value NALCO")
+        return
+
+    symbol_input = args[0].upper()
+    resolved_symbol = normalize_symbol_input(symbol_input)
+    await update.message.reply_text(f"⏳ Deep-dive V4 Valuation for {resolved_symbol}...")
+
+    try:
+        from v4.valuation_runner import run_v4_valuation
+        res = run_v4_valuation(resolved_symbol)
+        
+        if not res.get("success", True):
+            await update.message.reply_text(f"❌ Analysis failed: {res.get('reason', 'Unknown error')}")
+            return
+            
+        report = build_v4_friendly_report(res)
+        await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN)
+    except Exception as e:
+        logger.error(f"/value error: {e}")
+        await update.message.reply_text(f"❌ Valuation failed for {resolved_symbol}: {e}")
+
+async def cmd_valuation(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not ctx.args:
+        universe = "watchlist"
+    else:
+        universe = ctx.args[0].strip().lower()
+
+    # Smart detection: Is this a single stock instead of a universe?
+    # If it's in watchlist or SYMBOL_ALIASES, or ends with .NS/.BO, it's likely a stock.
+    from config import SYMBOL_ALIASES, WATCHLIST
+    potential_stock = universe.upper()
+    is_stock = (
+        potential_stock in WATCHLIST or 
+        potential_stock in SYMBOL_ALIASES or 
+        potential_stock.endswith(".NS") or 
+        potential_stock.endswith(".BO")
+    )
+
+    if is_stock:
+        # Redirect to cmd_value logic
+        return await cmd_value(update, ctx)
+
+    await update.message.reply_text(f"⏳ Running Strategy V4 Valuation Scanner for universe: {universe}...")
+    try:
+        from v3.universe_loader import BUILTIN_UNIVERSES
+        builtin_names = set(BUILTIN_UNIVERSES.keys())
+        
+        # Check if it's a file path or a builtin
+        if universe not in builtin_names and not any(c in universe for c in "./\\"):
+             await update.message.reply_text(f"⚠️ Unknown universe '{universe}'. Try: watchlist, {', '.join(sorted(builtin_names))}")
+             return
+
+        from v3.universe_loader import load_universe
+        symbols = load_universe(universe)
+        total_count = len(symbols)
+
+        ranked = run_valuation_scan(universe)
+        report = build_valuation_report(ranked, universe, total_count=total_count)
+        await update.message.reply_text(report, parse_mode=ParseMode.MARKDOWN)
+    except Exception as e:
+        logger.error(f"/valuation error: {e}")
+        await update.message.reply_text(f"❌ /valuation failed: {e}")
 
 
 async def cmd_analyze(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -379,7 +450,9 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("start",       cmd_start))
     app.add_handler(CommandHandler("help",        cmd_help))
     app.add_handler(CommandHandler("analyze",     cmd_analyze))
+    app.add_handler(CommandHandler("value",       cmd_value))
     app.add_handler(CommandHandler("stocktips",   cmd_stocktips))
+    app.add_handler(CommandHandler("valuation",   cmd_valuation))
     app.add_handler(CommandHandler("report",      cmd_report))
     app.add_handler(CommandHandler("watchlist",   cmd_watchlist))
     app.add_handler(CommandHandler("fii",         cmd_fii))

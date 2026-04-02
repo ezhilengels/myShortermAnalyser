@@ -260,7 +260,7 @@ def run_full_analysis(
     Returns full analysis dict with all results and score.
     """
     from analysis.technical        import run_all_technical_checks, run_additional_technical_signals
-    from analysis.fundamental      import run_all_fundamental_checks
+    from analysis.fundamental      import run_all_fundamental_checks, run_additional_fundamental_signals
     from analysis.macro            import run_all_macro_checks, run_additional_macro_signals
     from analysis.secret_strategies import run_all_secret_checks
 
@@ -268,6 +268,7 @@ def run_full_analysis(
     additional_signals = (
         run_additional_technical_signals(df, ticker_info, stock_symbol)
         + run_additional_macro_signals(stock_symbol)
+        + run_additional_fundamental_signals(stock_symbol)
     )
     fund_results    = run_all_fundamental_checks(stock_symbol, ticker_info, financials, balance_sheet)
     macro_results   = run_all_macro_checks(stock_symbol, fii_data)

@@ -275,8 +275,8 @@ CHECK_SOURCES = {
     7: "Screener + Yahoo fundamentals",
     8: "Screener + Yahoo fundamentals",
     9: "Screener + Yahoo fundamentals",
-    10: "Screener + Yahoo fundamentals + peer benchmark",
-    11: "Screener shareholding + Yahoo sector trend",
+    10: "Strategy V4 Multi-Model Intrinsic Valuation",
+    11: "Screener shareholding + Yahoo sector trend (FII Exit Pressure)",
     12: "Yahoo Nifty + sector benchmark + stock trend",
     13: "India VIX + US VIX feeds",
     14: "Commodity feeds",
@@ -390,6 +390,7 @@ MARGIN_OF_SAFETY     = float(os.getenv("MARGIN_OF_SAFETY", "30.0"))
 # V4 Strategy Toggles
 V4_STRICT_MODE       = os.getenv("V4_STRICT_MODE", "True").lower() == "true"
 V4_WEIGHTED_VALUATION = os.getenv("V4_WEIGHTED_VALUATION", "True").lower() == "true"
+V4_SKIP_PREFILTER     = os.getenv("V4_SKIP_PREFILTER", "False").lower() == "true"
 
 # ─────────────────────────────────────────────
 # DISCLAIMER

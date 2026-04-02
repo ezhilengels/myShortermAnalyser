@@ -35,30 +35,34 @@ def get_groq_decision(
     scoring: dict,
     current_price: float,
     market_context: dict,
+    additional_signals: list[dict] = None,
 ) -> dict:
     """
-    Send all 21 condition results to Groq AI and return a structured decision.
-
-    market_context: {
-        'india_market_mood': str,
-        'fii_summary': str,
-        'vix': float,
-    }
+    Send all core and additional signals to Groq AI and return a structured decision.
     """
     try:
         client = get_groq_client()
         conditions_text = format_conditions_for_ai(all_checks)
+        
+        additional_text = ""
+        if additional_signals:
+            additional_text = "\nADDITIONAL SIGNALS (Non-Scoring):\n"
+            for s in additional_signals:
+                additional_text += f"- {s['name']}: {s['signal']} | {s['detail']}\n"
 
         india_mood  = market_context.get("india_market_mood", "Unknown")
         fii_summary = market_context.get("fii_summary", "Unknown")
         vix         = market_context.get("vix", 0)
+        
+        total_checks = scoring.get("total_checks", 21)
 
         prompt = f"""You are an expert Indian stock market analyst with 20 years experience trading NSE/BSE markets. You use both technical analysis and fundamental analysis, as well as understanding of FII/DII behaviour, option chain signals, and macro trends.
 
 STOCK: {stock_name} ({stock_symbol})
 CURRENT PRICE: ₹{current_price:.2f}
-21-CONDITION SCORECARD (Score: {scoring['score']} | Grade: {scoring['grade']}):
+{total_checks}-CONDITION SCORECARD (Score: {scoring['score']} | Grade: {scoring['grade']}):
 {conditions_text}
+{additional_text}
 
 MARKET CONTEXT:
 - India Market: {india_mood}
@@ -67,11 +71,13 @@ MARKET CONTEXT:
 - Core score: {scoring.get('core_score', 0)}
 - Context score: {scoring.get('context_score', 0)}
 - Average check confidence: {scoring.get('average_confidence', 0):.2f}
-- Bullish signals: {scoring['bullish_count']}/21
-- Bearish signals: {scoring['bearish_count']}/21
-- Neutral signals: {scoring['neutral_count']}/21
-- Unavailable checks: {scoring.get('unavailable_checks', 0)}/21
-- Critical unavailable checks: {scoring.get('critical_unavailable', 0)}
+- Bullish signals: {scoring['bullish_count']}/{total_checks}
+- Bearish signals: {scoring['bearish_count']}/{total_checks}
+- Neutral signals: {scoring['neutral_count']}/{total_checks}
+- Unavailable checks: {scoring.get('unavailable_checks', 0)}/{total_checks}
+
+Based on this complete multi-factor analysis, provide your decision in the following JSON format ONLY:
+...
 
 Based on this complete 21-condition analysis, provide your decision in the following JSON format ONLY (no other text outside JSON):
 

@@ -162,15 +162,15 @@ def _build_stock_section(
 
     # Catalysts
     if catalysts:
-        section += f"   🔑 Catalyst: {catalysts[0]}\n"
+        section += f"   🔑 Catalysts: {', '.join(catalysts[:3])}\n"
 
     # Risks
     if risks:
-        section += f"   ⚠️ Risk: {risks[0]}\n"
+        section += f"   ⚠️ Risks: {', '.join(risks[:3])}\n"
 
     # Summary
     if summary:
-        section += f"   💬 {summary[:150]}\n"
+        section += f"   💬 {summary[:500]}\n"
 
     return section
 
@@ -427,3 +427,98 @@ def build_stocktips_report(result: dict) -> str:
         note_section = f"\n📝 *MARKET NOTE*\n{market_note}\n"
 
     return header + overview + picks_section + shortlist_section + watchout_section + note_section + "\n" + DISCLAIMER
+
+
+def build_v4_friendly_report(res: dict) -> str:
+    """Build a visually rich, 'friendly' single-stock valuation report for Strategy V4."""
+    sym     = res["symbol"]
+    name    = STOCK_NAMES.get(sym, sym.replace(".NS", ""))
+    now     = datetime.now(IST).strftime("%d-%b-%Y %I:%M %p IST")
+    cmp     = res["cmp"]
+    iv      = res["iv"]
+    mos     = res["margin_of_safety"]
+    verdict = res["verdict"]
+    model   = res["model_used"]
+    ey      = res.get("earnings_yield", 0)
+    ey_v    = res.get("yield_verdict", "N/A")
+
+    # Header & Visual Status
+    emoji = "🟢" if verdict == "UNDERVALUED" else "🟡" if verdict == "FAIRLY_VALUED" else "🔴"
+    mos_bar = "🟩" * int(min(max(mos / 10, 0), 5)) + "⬜" * int(5 - min(max(mos / 10, 0), 5))
+    if mos < 0:
+        mos_bar = "🟥" * int(min(max(abs(mos) / 10, 0), 5)) + "⬜" * int(5 - min(max(abs(mos) / 10, 0), 5))
+
+    header = (
+        f"💎 *{name} V4 Valuation*\n"
+        f"🕐 {now}\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    )
+
+    summary = (
+        f"{emoji} *Verdict:* {verdict}\n"
+        f"🛡️ *Margin of Safety:* {mos:+.1f}% | {mos_bar}\n"
+        f"📍 *Primary Model:* {model}\n\n"
+        f"💹 *Current Price:* ₹{cmp:.2f}\n"
+        f"🎯 *Intrinsic Value:* ₹{iv:.2f}\n"
+        f"📈 *Earnings Yield:* {ey:.1f}% ({ey_v})\n"
+    )
+
+    benchmarks = "\n━━━━━━━━━━━━━━━━━━━━━━\n*FORMULA BENCHMARKS*\n"
+    for m, val in res.get("valuation_results", {}).items():
+        if val > 0:
+            diff = ((val - cmp) / cmp) * 100
+            dot = "🟢" if diff > 15 else "🟡" if diff > -5 else "🔴"
+            benchmarks += f"{dot} {m}: ₹{val:.2f} ({diff:+.1f}%)\n"
+
+    # AI context (optional if available)
+    footer = (
+        "\n━━━━━━━━━━━━━━━━━━━━━━\n"
+        "💡 *What this means:* "
+    )
+    if verdict == "UNDERVALUED":
+        footer += "Stock is trading below its calculated fundamental worth, offering a potential entry for value investors."
+    elif verdict == "FAIRLY_VALUED":
+        footer += "Stock is priced close to its fair value. Growth or momentum triggers are needed for a strong buy."
+    else:
+        footer += "Stock appears expensive based on fundamental models. Exercise caution or wait for a dip."
+
+    return header + summary + benchmarks + footer + "\n\n" + DISCLAIMER
+
+def build_valuation_report(ranked_results: list[dict], universe_name: str, total_count: int = 0) -> str:
+    """Build a formatted Telegram report for Strategy V4 Valuation Scanner."""
+    now = datetime.now(IST).strftime("%d-%b-%Y %I:%M %p IST")
+    
+    success_count = len(ranked_results)
+    skipped_count = total_count - success_count if total_count > 0 else 0
+
+    header = (
+        "💎 *V4 INTRINSIC VALUATION SCAN*\n"
+        f"🌐 *Universe:* {universe_name.upper()}\n"
+        f"📊 *Stats:* {success_count} valued | {skipped_count} skipped (Technically Weak)\n"
+        f"⏰ {now}\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    )
+
+    lines = []
+    lines.append(f"{'SYMBOL':<12} | {'MoS %':>8} | {'VERDICT'}")
+    lines.append("─" * 30)
+
+    for r in ranked_results:
+        name = STOCK_NAMES.get(r['symbol'], r['symbol'].replace(".NS", ""))
+        mos = r['margin_of_safety']
+        mos_str = f"{mos:+.1f}%"
+        verdict = r['verdict']
+        
+        # Emoji for verdict
+        emoji = "🟢" if verdict == "UNDERVALUED" else "🟡" if verdict == "FAIRLY_VALUED" else "🔴"
+        
+        lines.append(f"*{name:<10}* | {mos_str:>8} | {emoji} {verdict}")
+
+    body = "\n".join(lines)
+    
+    footer = (
+        "\n\n💡 *MoS:* Margin of Safety relative to calculated Intrinsic Value.\n"
+        "Models used include Graham, DCF, Buffett, and EPV based on sector."
+    )
+
+    return header + body + footer + "\n" + DISCLAIMER

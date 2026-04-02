@@ -25,6 +25,7 @@ def gather_valuation_data(symbol: str) -> Dict[str, Any]:
     
     try:
         # 1. Fetch from yfinance
+        logger.info(f"📡 Fetching Yahoo Finance info for {symbol}...")
         info = get_ticker_info(symbol)
         if not info:
             data["valid"] = False
@@ -41,8 +42,10 @@ def gather_valuation_data(symbol: str) -> Dict[str, Any]:
         data["book_value"] = info.get("bookValue") or 0.0
         
         # 2. Fetch from Screener (Primary source for Growth & FCF)
+        logger.info(f"🌐 Fetching Screener snapshot for {symbol}...")
         screener = get_screener_snapshot(symbol)
         if screener and screener.get("source_ok"):
+            logger.info(f"✅ Screener data acquired for {symbol}. Processing financials...")
             if not data["book_value"]:
                 data["book_value"] = screener.get("ratios", {}).get("book_value") or 0.0
             # Growth rates
@@ -98,6 +101,7 @@ def gather_valuation_data(symbol: str) -> Dict[str, Any]:
 
             data["roe"] = screener.get("ratios", {}).get("roe") or (info.get("returnOnEquity") or 0.0) * 100
         else:
+            logger.warning(f"⚠️ Screener data missing for {symbol}. Falling back to Yahoo essentials.")
             data["growth_5y"] = (info.get("earningsGrowth") or info.get("revenueGrowth") or 0.0) * 100
             data["growth_yoy"] = 0.0
             data["roe"] = (info.get("returnOnEquity") or 0.0) * 100
@@ -155,6 +159,9 @@ def gather_valuation_data(symbol: str) -> Dict[str, Any]:
             "DDM": data.get("dividend_rate", 0) > 0 and data.get("growth_5y", 0) > 0,
             "PB_ROE": data.get("book_value", 0) > 0 and data.get("roe", 0) > 0
         }
+        
+        valid_models = [m for m, v in data["model_validity"].items() if v]
+        logger.info(f"📊 {symbol} Summary: {len(valid_models)} valid models found ({', '.join(valid_models)})")
 
     except Exception as e:
         logger.error(f"V4 data gathering error for {symbol}: {e}")

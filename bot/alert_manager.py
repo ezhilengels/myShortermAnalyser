@@ -160,7 +160,7 @@ def check_v4_smart_alerts(watchlist: list[str]) -> list[str]:
             
             verdict = res["verdict"]
             cmp = res["cmp"]
-            iv = res["intrinsic_value"]
+            iv = res["iv"]
             mos = res["margin_of_safety"]
             ey_verdict = res["yield_verdict"]
             name = STOCK_NAMES.get(symbol, symbol)
